@@ -1,0 +1,34 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: "CrediYa"
+  devtools:
+    add-properties: false
+adapters:
+  r2dbc:
+    host: "localhost"
+    port: 5432
+    database: "postgres"
+    schema: "crediya"
+    username: "postgres"
+    password: "920808Ser."
+    pool:
+      enabled: true
+      initial-size: 20
+      max-size: 100
+      maxLifeTime: -1
+      validation-query: "SELECT 1"
+  profiles:
+    include: null
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+cors:
+  allowed-origins: "http://localhost:4200,http://localhost:8080"
