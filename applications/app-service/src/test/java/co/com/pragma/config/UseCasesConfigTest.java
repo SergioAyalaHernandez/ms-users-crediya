@@ -1,6 +1,7 @@
 package co.com.pragma.config;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,6 +34,11 @@ public class UseCasesConfigTest {
         @Bean
         public MyUseCase myUseCase() {
             return new MyUseCase();
+        }
+
+        @Bean
+        public co.com.pragma.model.user.user.gateways.UserGateway userGateway() {
+            return Mockito.mock(co.com.pragma.model.user.user.gateways.UserGateway.class);
         }
     }
 
