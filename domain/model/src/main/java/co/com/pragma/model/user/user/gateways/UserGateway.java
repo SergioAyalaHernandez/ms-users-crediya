@@ -4,5 +4,6 @@ import co.com.pragma.model.user.user.UserParameters;
 import reactor.core.publisher.Mono;
 
 public interface UserGateway {
-  Mono<Object> createUser(UserParameters userParameters);
+  Mono<UserParameters> createUser(UserParameters userParameters);
+  Mono<Boolean> existsByCorreoElectronico(String email);
 }
