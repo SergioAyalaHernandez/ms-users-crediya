@@ -11,7 +11,7 @@ import reactor.core.publisher.Mono;
 public class UserUseCase {
   private final UserGateway userGateway;
 
-  public Mono<UserParameters> createUser(UserParameters userParameters) {
+  public Mono<Object> createUser(UserParameters userParameters) {
     log.info("Creating user...");
     return userGateway.createUser(userParameters);
   }
