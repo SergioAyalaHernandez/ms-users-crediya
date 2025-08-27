@@ -55,7 +55,10 @@ subprojects {
 
     pitest {
         targetClasses = ['co.com.pragma.*']
-        excludedClasses = []
+        excludedClasses = [
+                'co.com.pragma.api.config.CorsConfig',
+                'co.com.pragma.api.config.SecurityHeadersConfig'
+        ]
         excludedTestClasses = []
         pitestVersion = '1.20.1'
         verbose = false

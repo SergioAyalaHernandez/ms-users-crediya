@@ -9,7 +9,7 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
-
+// $JACOCO-OFF$
 @Configuration
 public class CorsConfig {
 

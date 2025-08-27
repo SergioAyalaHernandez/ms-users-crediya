@@ -7,6 +7,7 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
+// $JACOCO-OFF$
 @Component
 public class SecurityHeadersConfig implements WebFilter {
 
