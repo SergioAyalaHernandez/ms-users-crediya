@@ -12,7 +12,6 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
 
@@ -55,7 +54,7 @@ public class UserRepositoryAdapter implements UserGateway {
               if (existingUser) {
                 return Mono.error(new RepositoryException(Constants.EMAIL_ALREADY_IN_USE));
               }
-              return Mono.empty();
+              return Mono.just(false);
             });
   }
 
