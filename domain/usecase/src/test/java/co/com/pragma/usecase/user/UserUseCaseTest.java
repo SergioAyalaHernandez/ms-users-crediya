@@ -283,5 +283,52 @@ class UserUseCaseTest {
             .verify();
   }
 
+  @Test
+  @DisplayName("Debería encontrar usuario por número de documento exitosamente")
+  void shouldFindUserByDocumentNumberSuccessfully() {
+    // Arrange
+    String documentNumber = "12345678";
+    UserParameters expectedUser = validUserParameters;
+    when(userGateway.findByDocumentNumber(documentNumber)).thenReturn(Mono.just(expectedUser));
 
+    // Act & Assert
+    StepVerifier.create(userUseCase.findByDocumentNumber(documentNumber))
+            .expectNext(expectedUser)
+            .verifyComplete();
+
+    verify(userGateway).findByDocumentNumber(documentNumber);
+  }
+
+  @Test
+  @DisplayName("Debería lanzar excepción cuando el usuario no existe")
+  void shouldThrowExceptionWhenUserNotFound() {
+    // Arrange
+    String documentNumber = "99999999";
+    when(userGateway.findByDocumentNumber(documentNumber)).thenReturn(Mono.empty());
+
+    // Act & Assert
+    StepVerifier.create(userUseCase.findByDocumentNumber(documentNumber))
+            .expectErrorMatches(throwable -> throwable instanceof BusinessException &&
+                    ((BusinessException) throwable).getErrorResponse().getCode().equals("USER_NOT_FOUND"))
+            .verify();
+
+    verify(userGateway).findByDocumentNumber(documentNumber);
+  }
+
+  @Test
+  @DisplayName("Debería propagar errores del gateway al buscar por documento")
+  void shouldPropagateGatewayErrorsWhenFindingByDocument() {
+    // Arrange
+    String documentNumber = "12345678";
+    RuntimeException gatewayException = new RuntimeException("Error en gateway");
+    when(userGateway.findByDocumentNumber(documentNumber)).thenReturn(Mono.error(gatewayException));
+
+    // Act & Assert
+    StepVerifier.create(userUseCase.findByDocumentNumber(documentNumber))
+            .expectErrorMatches(throwable -> throwable instanceof RuntimeException &&
+                    throwable.getMessage().equals("Error en gateway"))
+            .verify();
+
+    verify(userGateway).findByDocumentNumber(documentNumber);
+  }
 }

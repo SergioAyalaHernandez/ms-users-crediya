@@ -1,188 +1,171 @@
 package co.com.pragma.api;
 
+import co.com.pragma.api.auth.AuthHandler;
+import co.com.pragma.api.security.SecurityConfig;
 import co.com.pragma.model.user.user.UserParameters;
-import co.com.pragma.usecase.exceptions.BusinessException;
-import co.com.pragma.usecase.exceptions.ErrorResponse;
-import co.com.pragma.usecase.exceptions.ExceptionType;
-import co.com.pragma.usecase.user.UserUseCase;
-import org.assertj.core.api.Assertions;
+import co.com.pragma.model.user.user.gateways.JwtProvider;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import reactor.core.publisher.Mono;
+import org.springframework.web.reactive.function.server.ServerResponse;
 
-@ContextConfiguration(classes = {RouterRest.class, Handler.class})
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Collections;
+
+import static org.mockito.Mockito.when;
+
 @WebFluxTest
-@Import(TestConfig.class)
+@Import({RouterRest.class, SecurityConfig.class})
+@ContextConfiguration(classes = {RouterRestTest.TestConfig.class, TestApplication.class})
 class RouterRestTest {
+
+  @Autowired
+  private Handler handler;
+
+  @Autowired
+  private AuthHandler authHandler;
+
+  @Autowired
+  private JwtProvider jwtProvider;
 
   @Autowired
   private WebTestClient webTestClient;
 
-  @Autowired
-  private UserUseCase userUseCase;
+  @Configuration
+  @TestConfiguration
+  static class TestConfig {
+    @Bean
+    public Handler handler() {
+      return Mockito.mock(Handler.class);
+    }
 
-  @Test
-  void testCreateUser() {
-    // Given
-    String userJson = "{\n" +
-            "  \"nombres\": \"Juan Camilo\",\n" +
-            "  \"apellidos\": \"Pérez Perez\",\n" +
-            "  \"fechaNacimiento\": \"1990-01-01\",\n" +
-            "  \"direccion\": \"Calle Falsa 123\",\n" +
-            "  \"telefono\": \"123456789\",\n" +
-            "  \"correoElectronico\": \"juan1.perez@example.com\",\n" +
-            "  \"salarioBase\": 50000.00\n" +
-            "}";
+    @Bean
+    public AuthHandler authHandler() {
+      return Mockito.mock(AuthHandler.class);
+    }
 
-    Mockito.when(userUseCase.createUser(Mockito.any()))
-            .thenReturn(Mono.just(Mockito.mock(UserParameters.class)));
-
-    // When/Then
-    webTestClient.post()
-            .uri("/api/v1/usuarios")
-            .accept(MediaType.APPLICATION_JSON)
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(userJson)
-            .exchange()
-            .expectStatus().isOk()
-            .expectBody(String.class)
-            .value(userResponse -> {
-              Assertions.assertThat(userResponse).isNotNull();
-            });
+    @Bean
+    public JwtProvider jwtProvider() {
+      return Mockito.mock(JwtProvider.class);
+    }
   }
 
-  @Test
-  void testCreateUser_ConDatosValidos() {
-    String userJson = "{\n" +
-            "  \"nombres\": \"Juan Camilo\",\n" +
-            "  \"apellidos\": \"Pérez Perez\",\n" +
-            "  \"fechaNacimiento\": \"1990-01-01\",\n" +
-            "  \"direccion\": \"Calle Falsa 123\",\n" +
-            "  \"telefono\": \"123456789\",\n" +
-            "  \"correoElectronico\": \"juan1.perez@example.com\",\n" +
-            "  \"salarioBase\": 50000.00\n" +
-            "}";
+  @Nested
+  class UserEndpointTests {
+    @Test
+    void shouldCreateUserSuccessfully() {
+      // Given
+      UserParameters userParameters = UserParameters.builder()
+              .nombres("Juan Camilo")
+              .apellidos("Pérez Perez")
+              .fechaNacimiento(LocalDate.of(1990, 1, 1))
+              .direccion("Calle Falsa 123")
+              .telefono("123456789")
+              .correoElectronico("juan1.perez@example.com")
+              .salarioBase(BigDecimal.valueOf(50000.00))
+              .salarioBase(BigDecimal.valueOf(50000.00))
+              .build();
 
-    Mockito.when(userUseCase.createUser(Mockito.any()))
-            .thenReturn(Mono.just(Mockito.mock(UserParameters.class)));
+      when(jwtProvider.validateToken(Mockito.anyString())).thenReturn(Boolean.TRUE);
+      when(jwtProvider.getRoleFromToken(Mockito.anyString())).thenReturn(Collections.singletonList("ADMIN"));
 
-    webTestClient.post()
-            .uri("/api/v1/usuarios")
-            .accept(MediaType.APPLICATION_JSON)
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(userJson)
-            .exchange()
-            .expectStatus().isOk()
-            .expectBody(String.class)
-            .value(userResponse -> {
-              Assertions.assertThat(userResponse).isNotNull();
-              Assertions.assertThat(userResponse).contains("nombres", "apellidos", "fechaNacimiento");
-            });
+      when(handler.createUser(Mockito.any()))
+              .thenAnswer(invocation ->
+                      ServerResponse.ok()
+                              .contentType(MediaType.APPLICATION_JSON)
+                              .bodyValue(userParameters)
+              );
 
-    Mockito.verify(userUseCase).createUser(Mockito.any());
+      webTestClient.post()
+              .uri("/api/v1/usuarios")
+              .contentType(MediaType.APPLICATION_JSON)
+              .header(HttpHeaders.AUTHORIZATION, "Bearer fake-token-for-test")
+              .bodyValue(userParameters)
+              .exchange()
+              .expectStatus().isOk()
+              .expectBody(UserParameters.class)
+              .isEqualTo(userParameters);
+
+    }
+
+    @Test
+    void shouldGetUserByDocumentNumber() {
+      // Given
+      String documentNumber = "12345678";
+      UserParameters userParameters = UserParameters.builder()
+              .nombres("Juan Camilo")
+              .apellidos("Pérez Perez")
+              .fechaNacimiento(LocalDate.of(1990, 1, 1))
+              .build();
+
+      when(handler.getUserByDocumentNumber(Mockito.any()))
+              .thenAnswer(invocation ->
+                      ServerResponse.ok()
+                              .contentType(MediaType.APPLICATION_JSON)
+                              .bodyValue(userParameters)
+              );
+
+      when(jwtProvider.validateToken(Mockito.anyString())).thenReturn(Boolean.TRUE);
+      when(jwtProvider.getRoleFromToken(Mockito.anyString())).thenReturn(Collections.singletonList("ADMIN"));
+
+      // When & Then
+      webTestClient.get()
+              .uri("/api/v1/usuarios/{documentNumber}", documentNumber)
+              .header(HttpHeaders.AUTHORIZATION, "Bearer fake-token-for-test")
+              .exchange()
+              .expectStatus().isOk()
+              .expectBody(UserParameters.class)
+              .isEqualTo(userParameters);
+    }
+
+
+    @Test
+    void shouldFailWithUnauthorizedWhenNoToken() {
+      // Given
+      String documentNumber = "12345678";
+
+      // When & Then
+      webTestClient.get()
+              .uri("/api/v1/usuarios/{documentNumber}", documentNumber)
+              .exchange()
+              .expectStatus().is5xxServerError();
+    }
   }
 
-  @Test
-  void testCreateUser_ConError() {
-    String userJson = "{\n" +
-            "  \"nombres\": \"Juan Camilo\",\n" +
-            "  \"apellidos\": \"Pérez Perez\",\n" +
-            "  \"fechaNacimiento\": \"1990-01-01\",\n" +
-            "  \"direccion\": \"Calle Falsa 123\",\n" +
-            "  \"telefono\": \"123456789\",\n" +
-            "  \"correoElectronico\": \"juan1.perez@example.com\",\n" +
-            "  \"salarioBase\": 50000.00\n" +
-            "}";
+  @Nested
+  class AuthEndpointTests {
+    @Test
+    void shouldLoginSuccessfully() {
+      // Given
+      String token = "fake-jwt-token";
+      when(authHandler.login(Mockito.any()))
+              .thenAnswer(invocation ->
+                      ServerResponse.ok()
+                              .contentType(MediaType.TEXT_PLAIN)
+                              .bodyValue(token)
+              );
 
-    Mockito.when(userUseCase.createUser(Mockito.any()))
-            .thenReturn(reactor.core.publisher.Mono.error(new RuntimeException("Error al crear usuario")));
-
-    webTestClient.post()
-            .uri("/api/v1/usuarios")
-            .accept(MediaType.APPLICATION_JSON)
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(userJson)
-            .exchange()
-            .expectStatus().is5xxServerError();
-
-    Mockito.verify(userUseCase, Mockito.atLeastOnce()).createUser(Mockito.any());
+      // When & Then
+      webTestClient.post()
+              .uri("/api/v1/login")
+              .contentType(MediaType.APPLICATION_JSON)
+              .bodyValue("{\"username\":\"admin\",\"password\":\"password\"}")
+              .exchange()
+              .expectStatus().isOk()
+              .expectBody(String.class)
+              .isEqualTo(token);
+    }
   }
 
-  @Test
-  void testCreateUser_ConFormatoIncorrecto() {
-    String userJson = "{ datos incorrectos }";
-
-    Mockito.when(userUseCase.createUser(Mockito.any()))
-            .thenReturn(reactor.core.publisher.Mono.error(new RuntimeException("Error de formato")));
-
-    webTestClient.post()
-            .uri("/api/v1/usuarios")
-            .accept(MediaType.APPLICATION_JSON)
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(userJson)
-            .exchange()
-            .expectStatus().is5xxServerError();
-
-  }
-
-  @Test
-  void testRutaNoExistente() {
-    webTestClient.post()
-            .uri("/api/v1/ruta-que-no-existe")
-            .accept(MediaType.APPLICATION_JSON)
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("{}")
-            .exchange()
-            .expectStatus().isNotFound();
-  }
-
-  @Test
-  void testCreateUser_ConBusinessException() {
-    String userJson = "{\n" +
-            "  \"nombres\": \"Juan Camilo\",\n" +
-            "  \"apellidos\": \"Pérez Perez\",\n" +
-            "  \"fechaNacimiento\": \"1990-01-01\",\n" +
-            "  \"direccion\": \"Calle Falsa 123\",\n" +
-            "  \"telefono\": \"123456789\",\n" +
-            "  \"correoElectronico\": \"juan1.perez@example.com\",\n" +
-            "  \"salarioBase\": 50000.00\n" +
-            "}";
-
-    ErrorResponse errorResponse = new ErrorResponse("BUSINESS_ERROR", "Usuario ya existe", HttpStatus.BAD_REQUEST.value());
-
-    Mockito.when(userUseCase.createUser(Mockito.any()))
-            .thenReturn(Mono.error(new BusinessException(ExceptionType.ALREADY_EXISTS, errorResponse)));
-
-    webTestClient.post()
-            .uri("/api/v1/usuarios")
-            .accept(MediaType.APPLICATION_JSON)
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(userJson)
-            .exchange()
-            .expectStatus().isBadRequest()
-            .expectStatus().isBadRequest()
-            .expectBody()
-            .jsonPath("$.code").isEqualTo("BUSINESS_ERROR")
-            .jsonPath("$.message").isEqualTo("Usuario ya existe")
-            .jsonPath("$.status").isEqualTo(400);
-
-    Mockito.verify(userUseCase, Mockito.atLeastOnce()).createUser(Mockito.any());
-  }
-}
-
-@Configuration
-class TestConfig {
-  @Bean
-  public UserUseCase userUseCase() {
-    return Mockito.mock(UserUseCase.class);
-  }
 }

@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 public class Handler {
 
     private final UserUseCase userUseCase;
+
     public Mono<ServerResponse> createUser(ServerRequest serverRequest) {
         log.info("Iniciando creación de usuario");
       return serverRequest.bodyToMono(UserParameters.class)
@@ -36,4 +37,25 @@ public class Handler {
                                 "Ocurrió un error inesperado", 500));
               });
     }
+
+  public Mono<ServerResponse> getUserByDocumentNumber(ServerRequest serverRequest) {
+    log.info("Iniciando búsqueda de usuario por número de documento");
+    String documentNumber = serverRequest.queryParam("documentNumber")
+            .orElse(serverRequest.pathVariable("documentNumber"));
+
+    return userUseCase.findByDocumentNumber(documentNumber)
+            .flatMap(user -> ServerResponse.ok().bodyValue(user))
+            .onErrorResume(error -> {
+              if (error instanceof BusinessException businessException) {
+                log.warning("Error de negocio: " + businessException.getMessage());
+                return ServerResponse.status(businessException.getErrorResponse().getStatus())
+                        .bodyValue(businessException.getErrorResponse());
+              }
+
+              log.severe("Error inesperado: " + error + " - Tipo: " + error.getClass().getName());
+              return ServerResponse.status(500)
+                      .bodyValue(new ErrorResponse("INTERNAL_SERVER_ERROR",
+                              "Ocurrió un error inesperado", 500));
+            });
+  }
 }
