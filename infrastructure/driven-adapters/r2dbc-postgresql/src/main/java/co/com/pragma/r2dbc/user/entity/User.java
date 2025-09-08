@@ -12,6 +12,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Table("USERS")
@@ -50,5 +51,13 @@ public class User {
     @Max(value = 15000000, message = "El salario base no puede superar los 15.000.000")
     @Column("salario_base")
     private Double salarioBase;
+
+    @NotNull(message = "El número de documento es obligatorio")
+    @Column("numero_documento")
+    private BigDecimal numeroDocumento;
+
+    private String role;
+
+    private String password;
 
 }

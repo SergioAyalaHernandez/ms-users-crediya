@@ -1,9 +1,6 @@
 package co.com.pragma.model.user.user;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,6 +11,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class UserParameters {
+  private Long id;
   private String nombres;
   private String apellidos;
   private LocalDate fechaNacimiento;
@@ -21,4 +19,7 @@ public class UserParameters {
   private String telefono;
   private String correoElectronico;
   private BigDecimal salarioBase;
+  private BigDecimal numeroDocumento;
+  private String role;
+  private String password;
 }

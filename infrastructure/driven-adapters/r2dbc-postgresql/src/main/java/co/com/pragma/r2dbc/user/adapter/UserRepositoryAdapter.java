@@ -32,6 +32,7 @@ public class UserRepositoryAdapter implements UserGateway {
     return Mono.just(userParameters)
             .doOnNext(this::validateUserParameters)
             .map(userMapper::toEntity)
+            .doOnNext(user -> user.setRole(Constants.ROLE_USER))
             .flatMap(userRepository::save)
             .map(userMapper::toDto)
             .doOnSuccess(savedUser -> log.info(Constants.USER_CREATED_SUCCESSFULLY + savedUser))
@@ -58,6 +59,22 @@ public class UserRepositoryAdapter implements UserGateway {
             });
   }
 
+  @Override
+  public Mono<UserParameters> findByDocumentNumber(String documentNumber) {
+    log.info(Constants.SEARCHING_USER_BY_DOCUMENT + documentNumber);
+    return userRepository.findByNumeroDocumento(documentNumber)
+            .map(userMapper::toDto)
+            .doOnSuccess(user -> log.info(Constants.USER_FOUND_BY_DOCUMENT + (user != null ? user : "No encontrado")))
+            .switchIfEmpty(Mono.defer(() -> {
+              log.info(Constants.USER_NOT_FOUND_BY_DOCUMENT + documentNumber);
+              return Mono.empty();
+            }))
+            .onErrorMap(e -> {
+              log.severe(Constants.ERROR_FINDING_USER_BY_DOCUMENT + e.getMessage());
+              return new RepositoryException(Constants.UNEXPECTED_ERROR_MESSAGE, e);
+            });
+  }
+
   private void validateUserParameters(UserParameters userParameters) {
     log.info(Constants.VALIDATING_USER_PARAMETERS + userParameters);
     Set<ConstraintViolation<UserParameters>> violations = validator.validate(userParameters);
@@ -66,5 +83,21 @@ public class UserRepositoryAdapter implements UserGateway {
       throw new RepositoryException(Constants.VALIDATION_EXCEPTION_MESSAGE, new ConstraintViolationException(violations));
     }
     log.info(Constants.VALIDATION_SUCCESSFUL);
+  }
+
+  @Override
+  public Mono<UserParameters> findByCorreoElectronico(String email) {
+    log.info(Constants.SEARCHING_USER_BY_EMAIL + email);
+    return userRepository.findByCorreoElectronico(email)
+            .map(userMapper::toDto)
+            .doOnSuccess(user -> log.info(Constants.USER_NOT_FOUND + (user != null ? user : "No encontrado")))
+            .switchIfEmpty(Mono.defer(() -> {
+              log.info(Constants.USER_NOT_FOUND + email);
+              return Mono.empty();
+            }))
+            .onErrorMap(e -> {
+              log.severe(Constants.USER_NOT_FOUND_BY_EMAIL + e.getMessage());
+              return new RepositoryException(Constants.UNEXPECTED_ERROR_MESSAGE, e);
+            });
   }
 }

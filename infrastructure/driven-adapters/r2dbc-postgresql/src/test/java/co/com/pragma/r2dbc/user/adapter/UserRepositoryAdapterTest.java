@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -173,5 +174,127 @@ class UserRepositoryAdapterTest {
                 .verifyComplete();
 
         verify(userRepository).existsByCorreoElectronico(email);
+    }
+
+    @Test
+    void findByDocumentNumber_WhenEmpty_ShouldExecuteDeferredLogging() {
+        // Given
+        String documentNumber = "12345678";
+        when(userRepository.findByNumeroDocumento(documentNumber))
+                .thenReturn(Mono.empty());
+
+        // When
+        StepVerifier.create(userRepository.findByNumeroDocumento(documentNumber))
+                .expectComplete()
+                .verify();
+
+        // Then
+        verify(userMapper, never()).toDto(any());
+    }
+
+    @Test
+    void findByDocumentNumber_UserExists() {
+        // Arrange
+        String documentNumber = "123456789";
+        User userEntity = new User();
+        userEntity.setNumeroDocumento(new BigDecimal(123456789));
+
+        when(userRepository.findByNumeroDocumento(documentNumber)).thenReturn(Mono.just(userEntity));
+        when(userMapper.toDto(userEntity)).thenReturn(userParameters);
+
+        // Act & Assert
+        StepVerifier.create(adapter.findByDocumentNumber(documentNumber))
+                .expectNext(userParameters)
+                .verifyComplete();
+
+        verify(userRepository).findByNumeroDocumento(documentNumber);
+        verify(userMapper).toDto(userEntity);
+    }
+
+    @Test
+    void findByDocumentNumber_UserNotFound() {
+        // Arrange
+        String documentNumber = "nonexistent123";
+        when(userRepository.findByNumeroDocumento(documentNumber)).thenReturn(Mono.empty());
+
+        // Act & Assert
+        StepVerifier.create(adapter.findByDocumentNumber(documentNumber))
+                .verifyComplete();
+
+        verify(userRepository).findByNumeroDocumento(documentNumber);
+        verify(userMapper, never()).toDto(any());
+    }
+
+    @Test
+    void findByDocumentNumber_ErrorOccurs() {
+        // Arrange
+        String documentNumber = "123456789";
+        RuntimeException exception = new RuntimeException("Error al buscar usuario");
+        when(userRepository.findByNumeroDocumento(documentNumber)).thenReturn(Mono.error(exception));
+
+        // Act & Assert
+        StepVerifier.create(adapter.findByDocumentNumber(documentNumber))
+                .expectErrorSatisfies(throwable -> {
+                    assertTrue(throwable instanceof RepositoryException);
+                    assertEquals(Constants.UNEXPECTED_ERROR_MESSAGE, throwable.getMessage());
+                    assertSame(exception, throwable.getCause());
+                })
+                .verify();
+
+        verify(userRepository).findByNumeroDocumento(documentNumber);
+        verify(userMapper, never()).toDto(any());
+    }
+
+    @Test
+    void findByCorreoElectronico_UserExists() {
+        // Arrange
+        String email = "test@example.com";
+        User userEntity = new User();
+        userEntity.setCorreoElectronico(email);
+
+        when(userRepository.findByCorreoElectronico(email)).thenReturn(Mono.just(userEntity));
+        when(userMapper.toDto(userEntity)).thenReturn(userParameters);
+
+        // Act & Assert
+        StepVerifier.create(adapter.findByCorreoElectronico(email))
+                .expectNext(userParameters)
+                .verifyComplete();
+
+        verify(userRepository).findByCorreoElectronico(email);
+        verify(userMapper).toDto(userEntity);
+    }
+
+    @Test
+    void findByCorreoElectronico_UserNotFound() {
+        // Arrange
+        String email = "nonexistent@example.com";
+        when(userRepository.findByCorreoElectronico(email)).thenReturn(Mono.empty());
+
+        // Act & Assert
+        StepVerifier.create(adapter.findByCorreoElectronico(email))
+                .verifyComplete();
+
+        verify(userRepository).findByCorreoElectronico(email);
+        verify(userMapper, never()).toDto(any());
+    }
+
+    @Test
+    void findByCorreoElectronico_ErrorOccurs() {
+        // Arrange
+        String email = "test@example.com";
+        RuntimeException exception = new RuntimeException("Error al buscar usuario por correo");
+        when(userRepository.findByCorreoElectronico(email)).thenReturn(Mono.error(exception));
+
+        // Act & Assert
+        StepVerifier.create(adapter.findByCorreoElectronico(email))
+                .expectErrorSatisfies(throwable -> {
+                    assertTrue(throwable instanceof RepositoryException);
+                    assertEquals(Constants.UNEXPECTED_ERROR_MESSAGE, throwable.getMessage());
+                    assertSame(exception, throwable.getCause());
+                })
+                .verify();
+
+        verify(userRepository).findByCorreoElectronico(email);
+        verify(userMapper, never()).toDto(any());
     }
 }

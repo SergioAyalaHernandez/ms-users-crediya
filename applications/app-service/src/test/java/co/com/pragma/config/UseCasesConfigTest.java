@@ -40,6 +40,11 @@ public class UseCasesConfigTest {
         public co.com.pragma.model.user.user.gateways.UserGateway userGateway() {
             return Mockito.mock(co.com.pragma.model.user.user.gateways.UserGateway.class);
         }
+
+        @Bean
+        public co.com.pragma.model.user.user.gateways.JwtProvider jwtProvider() {
+            return Mockito.mock(co.com.pragma.model.user.user.gateways.JwtProvider.class);
+        }
     }
 
     static class MyUseCase {

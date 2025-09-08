@@ -6,4 +6,6 @@ import reactor.core.publisher.Mono;
 public interface UserGateway {
   Mono<UserParameters> createUser(UserParameters userParameters);
   Mono<Boolean> existsByCorreoElectronico(String email);
+  Mono<UserParameters> findByDocumentNumber(String documentNumber);
+  Mono<UserParameters> findByCorreoElectronico(String email);
 }

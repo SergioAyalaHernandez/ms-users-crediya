@@ -94,5 +94,17 @@ public class UserUseCase {
     log.info(Constants.LOG_SALARY_VALIDATION_SUCCESS);
   }
 
+  public Mono<UserParameters> findByDocumentNumber(String documentNumber) {
+    log.info("Buscando usuario por número de documento: " + documentNumber);
+    return userGateway.findByDocumentNumber(documentNumber)
+            .switchIfEmpty(Mono.error(new BusinessException(
+                    ExceptionType.NOT_FOUND,
+                    new ErrorResponse("USER_NOT_FOUND", "El usuario con el documento especificado no existe", 404)
+            )))
+            .doOnSuccess(user -> log.info("Usuario encontrado con documento: " + documentNumber))
+            .doOnError(error -> log.severe("Error al buscar usuario por documento: " + error.getMessage()));
+  }
+
+
 
 }
