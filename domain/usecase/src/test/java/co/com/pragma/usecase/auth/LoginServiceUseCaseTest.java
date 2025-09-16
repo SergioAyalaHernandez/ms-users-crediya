@@ -108,7 +108,7 @@ class LoginServiceUseCaseEdgeCasesTest {
 
     when(userGateway.findByCorreoElectronico("admin@example.com"))
             .thenReturn(Mono.just(user));
-    when(jwtProvider.generateToken("1", expectedClaims))
+    when(jwtProvider.generateToken(user, expectedClaims))
             .thenReturn(expectedToken);
 
     // When
@@ -119,6 +119,6 @@ class LoginServiceUseCaseEdgeCasesTest {
             .expectNext(expectedToken)
             .verifyComplete();
 
-    verify(jwtProvider).generateToken("1", expectedClaims);
+    verify(jwtProvider).generateToken(user, expectedClaims);
   }
 }

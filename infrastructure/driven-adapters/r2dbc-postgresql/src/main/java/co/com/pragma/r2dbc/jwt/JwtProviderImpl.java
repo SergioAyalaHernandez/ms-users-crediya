@@ -1,5 +1,6 @@
 package co.com.pragma.r2dbc.jwt;
 
+import co.com.pragma.model.user.user.UserParameters;
 import co.com.pragma.model.user.user.gateways.JwtProvider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -10,10 +11,7 @@ import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -24,21 +22,24 @@ public class JwtProviderImpl implements JwtProvider {
   private final long expirationMillis = 3600000; // 1 hora
 
   @Override
-  public String generateToken(String userId, Map<String, Object> claims) {
+  public String generateToken(UserParameters userParameters, Map<String, Object> claims) {
     Date now = new Date();
     Date expiryDate = new Date(now.getTime() + expirationMillis);
 
-    log.info("Generando token para usuario: " + userId);
-    log.info("Claims a incluir en el token: " + claims);
+    log.info("Generando token para usuario: " + userParameters.getId());
 
+      claims.put("salarioBase", userParameters.getSalarioBase());
+      claims.put("correoElectronico", Base64.getEncoder().encodeToString(userParameters.getCorreoElectronico().getBytes()));
+    log.info("Claims a incluir en el token: " + claims);
     return Jwts.builder()
-            .setSubject(userId)
+            .setSubject(String.valueOf(userParameters.getId()))
             .addClaims(claims)
             .setIssuedAt(now)
             .setExpiration(expiryDate)
             .signWith(secretKey, SignatureAlgorithm.HS256)
             .compact();
   }
+
 
   @Override
   public boolean validateToken(String token) {

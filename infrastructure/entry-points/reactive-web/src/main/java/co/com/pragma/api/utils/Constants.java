@@ -27,4 +27,12 @@ public class Constants {
   public static final String SWAGGER_RESOURCES_PATH = "/swagger-resources/**";
   public static final String[] API_DOCS_PATHS = {"/v3/api-docs/**", "/v2/api-docs/**"};
   public static final String TOKEN_ERROR = "Token inválido";
+
+  public static final String LOG_CREATE_USER = "Iniciando creación de usuario";
+  public static final String LOG_BUSINESS_ERROR = "Error de negocio: ";
+  public static final String LOG_UNEXPECTED_ERROR = "Error inesperado: ";
+  public static final String LOG_FIND_USER = "Iniciando búsqueda de usuario por número de documento";
+  public static final String INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR";
+  public static final String UNEXPECTED_ERROR_MESSAGE = "Ocurrió un error inesperado";
+  public static final String DOCUMENT_NUMBER_PARAM = "documentNumber";
 }
