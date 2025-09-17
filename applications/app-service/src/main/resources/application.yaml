@@ -1,18 +1,23 @@
 server:
   port: 8080
 spring:
+  config:
+    import:
+      - optional:aws-secretsmanager:crediya-secrets
   application:
     name: "CrediYa"
   devtools:
     add-properties: false
 adapters:
   r2dbc:
-    host: "localhost"
-    port: 5432
-    database: "postgres"
-    schema: "crediya"
-    username: "postgres"
-    password: "920808Ser."
+    host: "${r2dbcHost}"
+    port: "${r2dbcPort}"
+    database: "${r2dbcDataBase}"
+    schema: "${r2dbcSchema}"
+    username: "${r2dbcUsername}"
+    password: "${r2dbcPassword}"
+    options:
+      sslMode: require
     pool:
       enabled: true
       initial-size: 20
@@ -31,4 +36,10 @@ management:
       probes:
         enabled: true
 cors:
-  allowed-origins: "http://localhost:4200,http://localhost:8080"
+  allowed-origins: "${allowedOrigins}"
+aws:
+  region: "us-east-1"
+
+jwt:
+  secret: "${jwtSecret}"
+  expiration: 3600
